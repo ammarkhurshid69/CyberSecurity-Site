@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER OPSEC // AMMAR // V5.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --neon-green: #00ff41;
+            --dark-bg: #0d0d0d;
+            --panel-bg: rgba(16, 20, 16, 0.95);
+            --alert-red: #ff3333;
+            --warn-yellow: #ffff00;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            font-family: 'Share Tech Mono', monospace;
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        /* Matrix Background Animation */
+        canvas#matrixCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.15;
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .glitch-text {
+            animation: glitch 1s linear infinite;
+        }
+
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px,0) skew(0deg); }
+            4%, 60% { transform: translate(-2px,0) skew(0deg); }
+            62% { transform: translate(0,0) skew(5deg); }
+        }
+
+        .scan-line {
+            width: 100%;
+            height: 2px;
+            background: var(--neon-green);
+            opacity: 0.1;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-green); }
+
+        .loader {
+            border: 2px solid #000;
+            border-top: 2px solid var(--neon-green);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Login Modal */
+        #login-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .typing-effect::after {
+            content: '|';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Login/Signup Overlay -->
+    <div id="login-modal">
+        <div class="glass-panel p-8 w-full max-w-md border-2 border-green-500 relative">
+            <div class="absolute top-0 left-0 bg-green-500 text-black px-2 py-1 text-xs font-bold">AUTHENTICATION REQUIRED</div>
+            <div class="text-center mb-6">
+                <i class="fas fa-user-secret text-4xl mb-2 animate-pulse"></i>
+                <h2 class="text-2xl font-bold tracking-widest">CYBER<span class="text-white">SENTINEL</span></h2>
+                <p class="text-xs text-green-700">ACCESS CONTROL // AMMAR</p>
+            </div>
+            
+            <form id="auth-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="text-xs uppercase text-gray-400">Username / ID</label>
+                    <input type="text" id="username" class="w-full bg-black border border-green-800 p-2 text-green-400 focus:outline-none focus:border-green-400" placeholder="ENTER ID..." required>
+                </div>
+                <div>
+                    <label class="text-xs uppercase text-gray-400">Password</label>
+                    <input type="password" class="w-full bg-black border border-green-800 p-2 text-green-400 focus:outline-none focus:border-green-400" placeholder="••••••••" required>
+                </div>
+                <div class="flex justify-between items-center text-xs mt-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="accent-green-500"> Remember Encrypted Key
+                    </label>
+                    <a href="#" class="text-green-700 hover:text-green-500">Forgot Creds?</a>
+                </div>
+                <button type="submit" class="w-full bg-green-900/40 hover:bg-green-600 text-white py-2 border border-green-500 mt-4 transition-all uppercase tracking-widest text-sm font-bold">
+                    <i class="fas fa-lock-open mr-2"></i> Initialize Session
+                </button>
+            </form>
+            <div class="mt-4 text-center text-xs text-gray-500">
+                <p>RESTRICTED ACCESS. UNAUTHORIZED USERS WILL BE LOGGED.</p>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="matrixCanvas"></canvas>
+    <div class="scan-line"></div>
+
+    <!-- Header -->
+    <header class="p-3 border-b border-green-900 bg-black/80 flex justify-between items-center sticky top-0 z-50 backdrop-blur-sm">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-shield-virus text-2xl text-green-500"></i>
+            <div>
+                <h1 class="text-lg md:text-xl tracking-widest font-bold">CYBER<span class="text-white">SENTINEL</span></h1>
+                <p class="text-[10px] text-green-700">SYS.ADMIN: AMMAR | V.5.0</p>
+            </div>
+        </div>
+        <div class="text-right hidden md:block">
+            <p id="clock" class="text-sm">00:00:00 UTC</p>
+            <p class="text-xs text-red-500 font-bold animate-pulse">● LIVE MONITORING</p>
+        </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="flex-grow p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-[1600px] mx-auto w-full">
+
+        <!-- Column 1: IP & Location (Fixed) -->
+        <section class="lg:col-span-3 flex flex-col gap-4">
+            <!-- IP Module -->
+            <div class="glass-panel p-4 relative">
+                <div class="absolute top-0 right-0 bg-green-900 text-black text-[10px] px-2">NET_TRACE</div>
+                <h2 class="text-md mb-3 border-b border-green-800 pb-1 flex items-center gap-2">
+                    <i class="fas fa-globe-americas"></i> YOUR CONNECTION
+                </h2>
+                
+                <div id="ip-display" class="space-y-2 text-sm">
+                    <div class="flex justify-between border-b border-green-900/50 pb-1">
+                        <span class="text-gray-500">IP:</span>
+                        <span id="user-ip" class="text-white">Scanning...</span>
+                    </div>
+                    <div class="flex justify-between border-b border-green-900/50 pb-1">
+                        <span class="text-gray-500">ISP:</span>
+                        <span id="user-isp">...</span>
+                    </div>
+                    <div class="flex justify-between border-b border-green-900/50 pb-1">
+                        <span class="text-gray-500">LOC:</span>
+                        <span id="user-loc">...</span>
+                    </div>
+                </div>
+                <button onclick="refreshIP()" class="mt-3 w-full border border-green-700 text-xs py-1 hover:bg-green-900/50 transition">RE-SCAN NODE</button>
+            </div>
+
+            <!-- Author Badge -->
+            <div class="glass-panel p-4 text-center border-t-4 border-t-green-500">
+                <p class="text-xs text-gray-400">SECURE SYSTEM BY</p>
+                <h3 class="text-2xl font-bold text-white my-1 glitch-text">AMMAR</h3>
+                <div class="text-[10px] grid grid-cols-2 gap-2 mt-2">
+                    <span class="bg-green-900/30 p-1">ENCRYPTION: ON</span>
+                    <span class="bg-green-900/30 p-1">FIREWALL: ACTIVE</span>
+                </div>
+            </div>
+
+            <!-- AI Chatbot Module -->
+            <div class="glass-panel flex flex-col h-80 relative">
+                <div class="p-2 border-b border-green-800 bg-green-900/20 flex justify-between items-center">
+                    <span class="text-xs font-bold"><i class="fas fa-robot mr-1"></i> AI_ASSISTANT</span>
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                </div>
+                <div id="chat-history" class="flex-grow overflow-y-auto p-2 text-xs space-y-2">
+                    <div class="text-green-300">System: AI Module Online. Ask me about security.</div>
+                </div>
+                <div class="p-2 border-t border-green-800 flex gap-1">
+                    <input type="text" id="chat-input" placeholder="Query..." class="w-full bg-black border border-green-700 text-xs p-1 text-green-400 focus:outline-none">
+                    <button onclick="sendChat()" class="bg-green-800 px-2 text-xs hover:bg-green-600"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Column 2: Threat Map & Logs -->
+        <section class="lg:col-span-6 flex flex-col gap-4">
+            <!-- Map Visualization -->
+            <div class="glass-panel flex-grow min-h-[300px] relative overflow-hidden bg-black flex items-center justify-center">
+                <div class="absolute top-2 left-2 z-10 text-[10px] bg-black/50 border border-green-500 px-2">GLOBAL_THREAT_MAP</div>
+                
+                <!-- Radar Grid -->
+                <div class="absolute inset-0" style="background-image: radial-gradient(#1a4c22 1px, transparent 1px); background-size: 30px 30px; opacity: 0.4;"></div>
+                <div class="absolute w-[150%] h-[150%] border-r border-green-500/50 opacity-30 rounded-full animate-[spin_5s_linear_infinite]"></div>
+                
+                <!-- World Map SVG -->
+                <svg viewBox="0 0 1000 500" class="w-full h-full opacity-40 stroke-green-500 fill-none stroke-[1.5]">
+                    <path d="M150,150 Q250,50 450,150 T850,150 M150,350 Q350,450 650,350 T950,350" />
+                    <!-- Fake landmasses -->
+                    <path d="M200,100 L300,100 L350,200 L250,250 Z" /> <!-- NA -->
+                    <path d="M550,100 L700,100 L750,200 L600,250 Z" /> <!-- EU/ASIA -->
+                    <path d="M600,300 L700,300 L650,400 Z" /> <!-- Africa -->
+                </svg>
+
+                <div id="map-pings"></div>
+            </div>
+
+            <!-- Console Log -->
+            <div class="glass-panel h-48 flex flex-col p-2">
+                <div class="text-xs border-b border-green-900 pb-1 mb-1 text-gray-400">KERNEL_LOGS</div>
+                <div id="console-output" class="flex-grow overflow-y-auto font-mono text-[10px] md:text-xs space-y-1 text-green-300"></div>
+            </div>
+        </section>
+
+        <!-- Column 3: Instagram/Social Tracker (Simulated) -->
+        <section class="lg:col-span-3 flex flex-col gap-4">
+            
+            <div class="glass-panel p-0 overflow-hidden flex flex-col h-full border-2 border-red-900/50">
+                <div class="bg-red-900/20 p-3 border-b border-red-900 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-sm font-bold text-red-400"><i class="fab fa-instagram mr-2"></i>ACCOUNT WATCH</h2>
+                        <p class="text-[9px] text-red-300">SIMULATED INTRUSION DETECTION</p>
+                    </div>
+                    <i class="fas fa-exclamation-triangle text-red-500 animate-pulse"></i>
+                </div>
+
+                <div class="p-3 bg-black/50 text-[10px] text-gray-400 border-b border-red-900/30">
+                    MONITORING: <span class="text-white font-bold" id="monitored-user">@USER_ID</span><br>
+                    STATUS: <span class="text-red-500 font-bold">HIGH ALERT</span>
+                </div>
+
+                <div id="stalker-log" class="flex-grow overflow-y-auto p-2 space-y-2">
+                    <!-- Dynamic Items will appear here -->
+                    <div class="text-center text-gray-500 text-xs mt-10">Waiting for traffic...</div>
+                </div>
+
+                <div class="p-2 border-t border-red-900 bg-red-900/10">
+                    <button class="w-full bg-red-900/50 text-red-200 text-xs py-2 hover:bg-red-700 transition">
+                        EXPORT SECURITY REPORT
+                    </button>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <footer class="text-center p-2 text-[10px] text-gray-600 border-t border-green-900 bg-black">
+        SYSTEM ID: 593-ALPHA // AMMAR SECURITY PROTOCOLS // EDUCATIONAL SIMULATION ONLY
+    </footer>
+
+    <script>
+        // --- 1. Login Logic ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const user = document.getElementById('username').value;
+            const btn = e.target.querySelector('button');
+            
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> AUTHENTICATING...';
+            
+            setTimeout(() => {
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('monitored-user').innerText = '@' + (user || 'UNKNOWN_USER');
+                
+                // Play sound effect (optional/simulated)
+                logMessage(`USER [${user}] AUTHENTICATED SUCCESSFULLY.`, 'success');
+                initSystems();
+            }, 1500);
+        }
+
+        // --- 2. System Init ---
+        function initSystems() {
+            startMatrix();
+            updateClock();
+            fetchIPInfo();
+            startStalkerSimulation();
+        }
+
+        // --- 3. Matrix Background ---
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        let drops = [];
+
+        function startMatrix() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            const fontSize = 14;
+            const columns = canvas.width / fontSize;
+            drops = Array(Math.floor(columns)).fill(1);
+            setInterval(drawMatrix, 50);
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = '14px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                const text = String.fromCharCode(0x30A0 + Math.random() * 96);
+                ctx.fillText(text, i * 14, drops[i] * 14);
+                if (drops[i] * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+
+        // --- 4. Robust IP Scanner (With Fallback) ---
+        async function fetchIPInfo() {
+            const ipEl = document.getElementById('user-ip');
+            const ispEl = document.getElementById('user-isp');
+            const locEl = document.getElementById('user-loc');
+
+            ipEl.innerHTML = '<span class="loader"></span>';
+            
+            // List of APIs to try in order
+            const apis = [
+                'https://ipapi.co/json/',
+                'https://api.ipify.org?format=json', // Backup (only IP)
+            ];
+
+            try {
+                // Try primary
+                let response = await fetch(apis[0]);
+                if (!response.ok) throw new Error("Primary API failed");
+                let data = await response.json();
+                
+                displayIPData(data);
+                
+            } catch (err) {
+                console.log("Switching to backup API...");
+                try {
+                    // Try backup for basic IP if GEO fails
+                    let res2 = await fetch(apis[1]);
+                    let data2 = await res2.json();
+                    ipEl.innerText = data2.ip;
+                    ispEl.innerText = "Unknown (Privacy Mode)";
+                    locEl.innerText = "Hidden";
+                    logMessage("GEO-LOCATE FAILED. DISPLAYING IP ONLY.", 'warning');
+                } catch (e) {
+                    ipEl.innerText = "OFFLINE";
+                    logMessage("NETWORK UNREACHABLE", 'danger');
+                }
+            }
+        }
+
+        function displayIPData(data) {
+            document.getElementById('user-ip').innerText = data.ip;
+            document.getElementById('user-isp').innerText = data.org || 'Unknown';
+            document.getElementById('user-loc').innerText = `${data.city}, ${data.country_code}`;
+            logMessage(`CONNECTION TRACED: ${data.ip}`, 'success');
+        }
+
+        function refreshIP() { fetchIPInfo(); }
+
+        // --- 5. Console & Clock ---
+        const consoleEl = document.getElementById('console-output');
+        
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toUTCString();
+            setTimeout(updateClock, 1000);
+        }
+
+        function logMessage(text, type = 'info') {
+            const div = document.createElement('div');
+            const time = new Date().toLocaleTimeString('en-US', {hour12: false});
+            let color = type === 'danger' ? 'text-red-500' : (type === 'success' ? 'text-blue-400' : (type === 'warning' ? 'text-yellow-400' : 'text-green-300'));
+            
+            div.innerHTML = `<span class="opacity-50">[${time}]</span> <span class="${color}">${text}</span>`;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // --- 6. AI Chatbot (Simulated) ---
+        const chatInput = document.getElementById('chat-input');
+        chatInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendChat();
+        });
+
+        function sendChat() {
+            const input = chatInput.value;
+            if(!input) return;
+            
+            const history = document.getElementById('chat-history');
+            
+            // User Msg
+            const userDiv = document.createElement('div');
+            userDiv.className = 'text-right text-white';
+            userDiv.innerText = `YOU: ${input}`;
+            history.appendChild(userDiv);
+            
+            chatInput.value = '';
+
+            // AI Response (Simple logic)
+            setTimeout(() => {
+                const aiDiv = document.createElement('div');
+                aiDiv.className = 'text-green-300';
+                let response = "I am analyzing that request...";
+                
+                const lower = input.toLowerCase();
+                if(lower.includes('hack') || lower.includes('password')) response = "SECURITY ALERT: I cannot assist with offensive cyber operations. I can only provide defensive diagnostics.";
+                else if(lower.includes('ip')) response = "Your IP is public information exposed to every server you visit. Use a VPN to mask it.";
+                else if(lower.includes('ammar')) response = "Ammar is the System Administrator of this facility.";
+                else if(lower.includes('stalker') || lower.includes('insta')) response = "Social media platforms encrypt visitor data. The panel on the right simulates what an internal admin might see.";
+                else response = `Processing query: "${input}"... Data inconclusive.`;
+
+                aiDiv.innerText = `AI: ${response}`;
+                history.appendChild(aiDiv);
+                history.scrollTop = history.scrollHeight;
+            }, 800);
+        }
+
+        // --- 7. Simulated Stalker/Intrusion Tracker (The requested feature) ---
+        function startStalkerSimulation() {
+            const logContainer = document.getElementById('stalker-log');
+            logContainer.innerHTML = ''; // Clear waiting text
+
+            const locations = ["Moscow, RU", "Beijing, CN", "New York, US", "London, UK", "Mumbai, IN", "Lagos, NG", "Berlin, DE"];
+            const actions = [
+                { text: "LOGIN ATTEMPT BLOCKED", type: "danger", icon: "fa-user-slash" },
+                { text: "PROFILE VIEWED", type: "warning", icon: "fa-eye" },
+                { text: "PASSWORD RESET REQUEST", type: "danger", icon: "fa-key" },
+                { text: "DM ENCRYPTION SCAN", type: "info", icon: "fa-search" }
+            ];
+
+            setInterval(() => {
+                // 30% chance to generate an event
+                if(Math.random() > 0.7) {
+                    const action = actions[Math.floor(Math.random() * actions.length)];
+                    const loc = locations[Math.floor(Math.random() * locations.length)];
+                    const ip = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.x.x`;
+                    const time = new Date().toLocaleTimeString();
+
+                    const entry = document.createElement('div');
+                    entry.className = `p-2 border-l-2 ${action.type === 'danger' ? 'border-red-500 bg-red-900/10' : 'border-yellow-500 bg-yellow-900/10'} text-[10px] animate-pulse`;
+                    
+                    entry.innerHTML = `
+                        <div class="flex justify-between text-gray-400">
+                            <span>${time}</span>
+                            <span>${ip}</span>
+                        </div>
+                        <div class="${action.type === 'danger' ? 'text-red-400' : 'text-yellow-400'} font-bold mt-1">
+                            <i class="fas ${action.icon}"></i> ${action.text}
+                        </div>
+                        <div class="text-gray-500 text-right mt-1">${loc}</div>
+                    `;
+
+                    logContainer.prepend(entry);
+                    if(logContainer.children.length > 10) logContainer.lastChild.remove();
+
+                    // Add ping to map
+                    createMapPing(action.type === 'danger');
+                    logMessage(`ALERT: ${action.text} detected from ${loc}`, action.type);
+                }
+            }, 3000);
+        }
+
+        function createMapPing(isDanger) {
+            const map = document.getElementById('map-pings');
+            const ping = document.createElement('div');
+            const top = Math.random() * 80 + 10;
+            const left = Math.random() * 80 + 10;
+            const color = isDanger ? 'bg-red-500' : 'bg-yellow-400';
+            
+            ping.className = `absolute w-2 h-2 rounded-full ${color}`;
+            ping.style.top = top + '%';
+            ping.style.left = left + '%';
+            
+            const ripple = document.createElement('div');
+            ripple.className = `absolute inset-0 rounded-full animate-ping ${color}`;
+            ping.appendChild(ripple);
+            
+            map.appendChild(ping);
+            setTimeout(() => ping.remove(), 2000);
+        }
+
+    </script>
+</body>
+</html>
